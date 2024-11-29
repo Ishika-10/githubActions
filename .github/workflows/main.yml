@@ -15,7 +15,6 @@ jobs:
       uses: actions/checkout@v3
 
     # Step 2: Setup .NET environment
-    - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '8.0.x' # Specify the .NET version
@@ -72,9 +71,8 @@ jobs:
         mkdir -p ~/.ssh
         ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
 
-        # List the contents of the artifact directory for debugging
-        echo "Contents of the artifact directory:"
-        ls -al ./artifact
+        # Create the target directory on the EC2 instance if it doesn't exist
+        ssh -i githubActionsKP $EC2_USER@$EC2_HOST "sudo mkdir -p /var/www/myapp"
 
         # Copy the files to the EC2 instance
         scp -i githubActionsKP -r ./artifact/* $EC2_USER@$EC2_HOST:/var/www/myapp
