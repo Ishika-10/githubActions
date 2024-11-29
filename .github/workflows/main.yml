@@ -1,0 +1,58 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Checkout the code
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # Step 2: Setup .NET environment
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x' # Specify the .NET version
+
+    # Step 3: Restore dependencies
+    - name: Restore dependencies
+      run: dotnet restore
+
+    # Step 4: Build the project
+    - name: Build project
+      run: dotnet publish -c Release -o ./publish
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    # Step 5: Upload build artifacts
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: published-app
+        path: ./publish
+
+    # Step 6: Deploy to EC2
+    - name: Deploy to EC2
+      env:
+        EC2_PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
+        EC2_HOST: ${{ secrets.EC2_HOST }}
+        EC2_USER: ${{ secrets.EC2_USER }}
+      run: |
+        # Save the private key to a file
+        echo "$EC2_PRIVATE_KEY" > githubActionsKP
+        chmod 600 githubActionsKP
+
+        # Copy the files to the EC2 instance
+        scp -i githubActionsKP -r ./publish/* $EC2_USER@$EC2_HOST:/var/www/myapp
+
+        # Optional: Restart the service on the EC2 instance
+        ssh -i githubActionsKP $EC2_USER@$EC2_HOST "sudo systemctl restart myapp.service"
