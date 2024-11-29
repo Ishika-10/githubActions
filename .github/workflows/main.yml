@@ -49,6 +49,7 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: published-app
+        path: ./artifact  # Change the path to a separate directory
 
     # Step 8: Deploy to EC2
     - name: Deploy to EC2
@@ -66,7 +67,7 @@ jobs:
         ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
 
         # Copy the files to the EC2 instance
-        scp -i githubActionsKP -r ./published-app/* $EC2_USER@$EC2_HOST:/var/www/myapp
+        scp -i githubActionsKP -r ./artifact/publish/* $EC2_USER@$EC2_HOST:/var/www/myapp
 
         # Optional: Restart the service on the EC2 instance
         ssh -i githubActionsKP $EC2_USER@$EC2_HOST "sudo systemctl restart myapp.service"
