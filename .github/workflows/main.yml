@@ -51,6 +51,10 @@ jobs:
         echo "$EC2_PRIVATE_KEY" > githubActionsKP
         chmod 600 githubActionsKP
 
+        # Add the EC2 instance's SSH host key to known_hosts to prevent "Host key verification failed"
+        mkdir -p ~/.ssh
+        ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
+
         # Copy the files to the EC2 instance
         scp -i githubActionsKP -r ./publish/* $EC2_USER@$EC2_HOST:/var/www/myapp
 
