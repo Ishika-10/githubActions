@@ -45,13 +45,18 @@ jobs:
     - name: Download build artifacts
       uses: actions/download-artifact@v3
       with:
-        name: production-files
+        name: production-aap
         path: ./publish  
         
-    - name: deploy to github
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.TOKEN }}
-        publish_dir: ./publish
+     # Step 7: Deploy to EC2 instance
+    - name: Deploy to EC2
+      run: |
+        echo "$EC2_PRIVATE_KEY" > githubActionsKP
+        chmod 600 githubActionsKP
+        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+        scp -i githubActionsKP -r ./publish/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/myapp
+        ssh -i githubActionsKP ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "sudo systemctl restart myapp.service"
+      env:
+        EC2_PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
 
       
