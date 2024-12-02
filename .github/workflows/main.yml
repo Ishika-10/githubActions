@@ -45,10 +45,10 @@ jobs:
     - name: Download build artifacts
       uses: actions/download-artifact@v3
       with:
-        name: production-aap
+        name: published-app  # Match the name from the build job
         path: ./publish  
-        
-     # Step 7: Deploy to EC2 instance
+
+    # Step 7: Deploy to EC2 instance
     - name: Deploy to EC2
       run: |
         echo "$EC2_PRIVATE_KEY" > githubActionsKP
@@ -58,5 +58,3 @@ jobs:
         ssh -i githubActionsKP ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "sudo systemctl restart myapp.service"
       env:
         EC2_PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
-
-      
