@@ -35,6 +35,7 @@ jobs:
         name: published-app
         path: ./publish
 
+ 
   deploy:
     runs-on: ubuntu-latest
     needs: build
@@ -45,7 +46,7 @@ jobs:
     - name: Download build artifacts
       uses: actions/download-artifact@v3
       with:
-        name: published-app  # Match the name from the build job
+        name: published-app
         path: ./publish
 
     # Step 7: Setup SSH configuration
@@ -71,7 +72,7 @@ jobs:
     # Step 10: Deploy to EC2 and restart the service
     - name: Deploy to EC2
       run: |
-        scp -i ~/.ssh/githubActionsKP -r ./publish/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/myapp
-        ssh -i ~/.ssh/githubActionsKP ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "sudo systemctl restart myapp.service"
+        scp -i ~/.ssh/githubActionsKP -v -r ./publish/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/myapp
+        ssh -i ~/.ssh/githubActionsKP -v ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "sudo systemctl restart myapp.service"
       env:
         EC2_PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
