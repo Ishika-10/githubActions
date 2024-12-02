@@ -46,7 +46,21 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: published-app  # Match the name from the build job
-        path: ./publish  
+        path: ./publish
+        
+    - name: Setup SSH directory
+      run: |
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+    - name: Add known hosts
+      run: |
+        ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
+        chmod 644 ~/.ssh/known_hosts
+    - name: Add private key
+      run: |
+        echo "$EC2_PRIVATE_KEY" > ~/.ssh/githubActionsKP
+        chmod 600 ~/.ssh/githubActionsKP
+  
 
     # Step 7: Deploy to EC2 instance
     - name: Deploy to EC2
