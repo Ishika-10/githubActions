@@ -38,7 +38,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref=='refs/heads/master'
+    if: github.ref == 'refs/heads/master'
 
     steps:
     # Step 6: Download build artifacts
@@ -47,28 +47,29 @@ jobs:
       with:
         name: published-app  # Match the name from the build job
         path: ./publish
-        
+
+    # Step 7: Setup SSH configuration
     - name: Setup SSH directory
       run: |
         mkdir -p ~/.ssh
         chmod 700 ~/.ssh
+
+    # Step 8: Add known hosts (EC2 Host)
     - name: Add known hosts
       run: |
         ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
         chmod 644 ~/.ssh/known_hosts
+
+    # Step 9: Add private key to SSH
     - name: Add private key
       run: |
         echo "$EC2_PRIVATE_KEY" > ~/.ssh/githubActionsKP
         chmod 600 ~/.ssh/githubActionsKP
-  
 
-    # Step 7: Deploy to EC2 instance
+    # Step 10: Deploy to EC2 and restart the service
     - name: Deploy to EC2
       run: |
-        echo "$EC2_PRIVATE_KEY" > githubActionsKP
-        chmod 600 githubActionsKP
-        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-        scp -i githubActionsKP -r ./publish/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/myapp
-        ssh -i githubActionsKP ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "sudo systemctl restart myapp.service"
+        scp -i ~/.ssh/githubActionsKP -r ./publish/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/myapp
+        ssh -i ~/.ssh/githubActionsKP ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "sudo systemctl restart myapp.service"
       env:
         EC2_PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
