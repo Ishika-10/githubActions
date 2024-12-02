@@ -52,12 +52,14 @@ jobs:
     - name: Setup SSH directory
       run: |
         mkdir -p ~/.ssh
+        touch ~/.ssh/known_hosts
         chmod 700 ~/.ssh
+        chmod 644 ~/.ssh/known_hosts
 
     # Step 8: Add known hosts (EC2 Host)
     - name: Add known hosts
       run: |
-        ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
+        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
         chmod 644 ~/.ssh/known_hosts
 
     # Step 9: Add private key to SSH
