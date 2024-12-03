@@ -1,44 +1,40 @@
-name: Deploy to EC2 (C#) 🚀
+name: Deploy to EC2 🚀
 
 on:
   push:
     branches:
-      - "master"  # Triggers the workflow on push to the 'main' branch (adjust if needed)
+      - "16-CICD-PYTHON-WEBAPP"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      # Checkout the code from the repository
-      - name: Checkout repository 🚀
+      - name: Checkout current branch ✅
         uses: actions/checkout@v2
 
-      # Set up the SSH key and whitelist EC2 IP address
-      - name: Set up SSH key and whitelist EC2 IP 🐻‍❄️
+      - name: Set up SSH key and whitelist EC2 IP address 🐻‍❄️
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan 16.171.255.176 >> ~/.ssh/known_hosts
 
-      # Build the C# application and publish to the './publish' folder
-      - name: Build and Publish C# Application 🛠️
+      - name: Ensure destination directory exists on EC2
         run: |
-          dotnet publish -c Release -o ./publish
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@16.171.255.176 "mkdir -p /home/ubuntu/"
 
-      # Copy the published files to the EC2 instance
-      - name: Copy files to EC2 🚙
+      - name: Check contents of publish directory
         run: |
-          scp -r ./publish/* ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/home/ubuntu/
+          ls -la ./publish/
 
-      # Run the deployment script on the EC2 instance
-      - name: Run deployment script on EC2 🚀
+      - name: Copy files to EC2
         run: |
-          ssh -v -o StrictHostKeyChecking=no ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "chmod +x /home/ubuntu/deploy.sh && /home/ubuntu/deploy.sh"
+          scp -r ./publish/* ubuntu@16.171.255.176:/home/ubuntu/
 
-      # Clean up the SSH key to maintain security
+      - name: Run deployment script on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@16.171.255.176 "chmod +x /home/ubuntu/deploy.sh && /home/ubuntu/deploy.sh"
+
       - name: Clean up SSH key 🚀
         if: always()
-        run: |
-          rm -f ~/.ssh/id_rsa
+        run: rm -f ~/.ssh/id_rsa
