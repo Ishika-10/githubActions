@@ -1,4 +1,4 @@
-name: Deploy to EC2
+name: Deploy to EC2 🚀
 
 on:
   push:
@@ -18,7 +18,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '8.0.x' # Specify the .NET version
 
     # Step 3: Restore dependencies
     - name: Restore dependencies
@@ -41,35 +41,43 @@ jobs:
     if: github.ref == 'refs/heads/master'
 
     steps:
-    # Step 6: Checkout the code (optional if needed for context)
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    # Step 7: Download build artifacts
+    # Step 1: Download build artifacts
     - name: Download build artifacts
       uses: actions/download-artifact@v3
       with:
         name: published-app
         path: ./publish
 
-    # Step 8: Setup SSH and whitelist EC2 IP
-    - name: Setup SSH key and whitelist EC2 IP
+    # Step 2: Setup SSH
+    - name: Setup SSH directory
       run: |
         mkdir -p ~/.ssh
-        echo "${{ secrets.EC2_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
+        chmod 700 ~/.ssh
+        touch ~/.ssh/known_hosts
+        chmod 644 ~/.ssh/known_hosts
+
+    # Step 3: Add known hosts (EC2 Host)
+    - name: Add known hosts
+      run: |
         ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-    # Step 9: Deploy to EC2
-    - name: Copy files to EC2
+    # Step 4: Add private key to SSH
+    - name: Add private key
       run: |
-        scp -i ~/.ssh/id_rsa -r ./publish/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/myapp
+        echo "${{ secrets.EC2_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
 
-    - name: Restart the application
+    # Step 5: Copy files to EC2
+    - name: Copy files to remote server
       run: |
-        ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "sudo systemctl restart myapp.service"
+        scp -r ./publish/* ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/home/ubuntu/
 
-    # Step 10: Clean up SSH keys
-    - name: Clean up SSH key
-      if: always()
-      run: rm -f ~/.ssh/id_rsa
+    # Step 6: Move files and restart service
+    - name: Deploy application and restart service
+      run: |
+        ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << EOF
+          sudo mkdir -p /var/www/myapp
+          sudo mv /home/ubuntu/* /var/www/myapp/
+          sudo chown -R www-data:www-data /var/www/myapp
+          sudo systemctl restart myapp.service
+        EOF
