@@ -17,11 +17,11 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan 16.171.255.176 >> ~/.ssh/known_hosts
+          ssh-keyscan ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
       - name: Ensure destination directory exists on EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@16.171.255.176 "mkdir -p /home/ubuntu/"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "mkdir -p /home/${{ secrets.EC2_USERNAME }}/"
 
       - name: Check contents of publish directory
         run: |
@@ -29,11 +29,11 @@ jobs:
 
       - name: Copy files to EC2
         run: |
-          scp -r ./publish/* ubuntu@16.171.255.176:/home/ubuntu/
+          scp -r ./publish/* ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USERNAME }}/
 
       - name: Run deployment script on EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@16.171.255.176 "chmod +x /home/ubuntu/deploy.sh && /home/ubuntu/deploy.sh"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "chmod +x /home/${{ secrets.EC2_USERNAME }}/deploy.sh && /home/${{ secrets.EC2_USERNAME }}/deploy.sh"
 
       - name: Clean up SSH key 🚀
         if: always()
