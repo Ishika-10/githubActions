@@ -69,6 +69,7 @@ jobs:
           echo "Testing SSH connection to ${{ secrets.EC2_HOST }}..."
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "echo 'SSH connection successful'"
 
+
       - name: Copy files to remote server
         run: |
           echo "Starting file copy to EC2..."
