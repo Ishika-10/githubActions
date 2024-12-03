@@ -73,7 +73,7 @@ jobs:
       - name: Copy files to remote server
         run: |
           echo "Starting file copy to EC2..."
-          scp -i ~/.ssh/id_rsa -r ./publish/* ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/home/ubuntu/
+          scp -r ./publish/* ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/home/ubuntu/
 
       - name: Debug Verify remote file transfer
         run: |
