@@ -1,95 +1,44 @@
-name: Deploy to EC2 🚀
+name: Deploy to EC2 (C#) 🚀
 
 on:
   push:
     branches:
-      - master
+      - "main"  # Triggers the workflow on push to the 'main' branch (adjust if needed)
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Restore dependencies
-        run: dotnet restore
-
-      - name: Build project
-        run: dotnet publish -c Release -o ./publish
-
-      - name: Debug Verify build output
-        run: |
-          echo "Checking ./publish folder contents after build:"
-          ls -la ./publish
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: published-app
-          path: ./publish
-
   deploy:
     runs-on: ubuntu-latest
-    needs: build
 
     steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: published-app
-          path: ./publish
+      # Checkout the code from the repository
+      - name: Checkout repository 🚀
+        uses: actions/checkout@v2
 
-      - name: Debug Verify artifact download
-        run: |
-          echo "Checking ./publish folder contents after artifact download:"
-          ls -la ./publish
-
-      - name: Setup SSH
+      # Set up the SSH key and whitelist EC2 IP address
+      - name: Set up SSH key and whitelist EC2 IP 🐻‍❄️
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Debug Verify SSH setup
+      # Build the C# application and publish to the './publish' folder
+      - name: Build and Publish C# Application 🛠️
         run: |
-          echo "Checking SSH configuration:"
-          ls -la ~/.ssh
-          cat ~/.ssh/known_hosts
+          dotnet publish -c Release -o ./publish
 
-      - name: Testing SSH connection to EC2
+      # Copy the published files to the EC2 instance
+      - name: Copy files to EC2 🚙
         run: |
-          echo "Testing SSH connection to ${{ secrets.EC2_HOST }}..."
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "echo 'SSH connection successful'"
-          shell: /usr/bin/bash -e {0}
-
-      - name: Copy files to remote server
-        run: |
-          echo "Starting file copy to EC2..."
           scp -r ./publish/* ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/home/ubuntu/
 
-      - name: Debug Verify remote file transfer
+      # Run the deployment script on the EC2 instance
+      - name: Run deployment script on EC2 🚀
         run: |
-          echo "Verifying files on the remote server:"
-          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "echo 'SSH connection successful'"
+          ssh -v -o StrictHostKeyChecking=no ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "chmod +x /home/ubuntu/deploy.sh && /home/ubuntu/deploy.sh"
 
-      - name: Deploy application and restart service
+      # Clean up the SSH key to maintain security
+      - name: Clean up SSH key 🚀
+        if: always()
         run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << EOF
-            sudo mkdir -p /var/www/myapp
-            sudo mv /home/ubuntu/* /var/www/myapp/
-            sudo chown -R www-data:www-data /var/www/myapp
-            sudo systemctl restart myapp.service
-          EOF
-
-      - name: Debug Verify service status
-        run: |
-          echo "Checking the status of the application service:"
-          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "sudo systemctl status myapp.service"
+          rm -f ~/.ssh/id_rsa
