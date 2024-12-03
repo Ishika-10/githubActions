@@ -1,40 +1,35 @@
-name: Deploy to EC2
+name: Deploy .NET Core Application to AWS EC2
 
 on:
   push:
     branches:
-      - "master"
+      - master
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout current branch
+      - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up SSH key and whitelist EC2 IP address
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0'
 
-      - name: Ensure destination directory exists on EC2
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "mkdir -p /home/${{ secrets.EC2_USERNAME }}/"
+      - name: Build the application
+        run: dotnet publish -c Release -o ./publish
 
-      - name: Check contents of publish directory
-        run: |
-          ls -la ./publish/
-
-      - name: Copy files to EC2
-        run: |
-          scp -r ./publish/* ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USERNAME }}/
-
-      - name: Run deployment script on EC2
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "chmod +x /home/${{ secrets.EC2_USERNAME }}/deploy.sh && /home/${{ secrets.EC2_USERNAME }}/deploy.sh"
-
-      - name: Clean up SSH key 🚀
-        if: always()
-        run: rm -f ~/.ssh/id_rsa
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo rm -rf /var/www/myapp
+            sudo mkdir -p /var/www/myapp
+            sudo chown -R ubuntu:ubuntu /var/www/myapp
+            scp -r ./publish/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/myapp
+            sudo systemctl restart myapp.service  
