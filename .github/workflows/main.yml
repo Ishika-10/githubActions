@@ -64,11 +64,11 @@ jobs:
           ls -la ~/.ssh
           cat ~/.ssh/known_hosts
 
-      - name: Debug Test SSH connection
+      - name: Testing SSH connection to EC2
         run: |
           echo "Testing SSH connection to ${{ secrets.EC2_HOST }}..."
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "echo 'SSH connection successful'"
-
+          shell: /usr/bin/bash -e {0}
 
       - name: Copy files to remote server
         run: |
