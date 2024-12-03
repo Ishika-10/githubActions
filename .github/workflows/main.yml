@@ -10,80 +10,80 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '8.0.x'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
 
-    - name: Restore dependencies
-      run: dotnet restore
+      - name: Restore dependencies
+        run: dotnet restore
 
-    - name: Build project
-      run: dotnet publish -c Release -o ./publish
+      - name: Build project
+        run: dotnet publish -c Release -o ./publish
 
-    - name: Debug: Verify build output
-      run: |
-        echo "Checking ./publish folder contents after build:"
-        ls -la ./publish
+      - name: Debug Verify build output
+        run: |
+          echo "Checking ./publish folder contents after build:"
+          ls -la ./publish
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: published-app
-        path: ./publish
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: published-app
+          path: ./publish
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
 
     steps:
-    - name: Download build artifacts
-      uses: actions/download-artifact@v3
-      with:
-        name: published-app
-        path: ./publish
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: published-app
+          path: ./publish
 
-    - name: Debug: Verify artifact download
-      run: |
-        echo "Checking ./publish folder contents after artifact download:"
-        ls -la ./publish
+      - name: Debug Verify artifact download
+        run: |
+          echo "Checking ./publish folder contents after artifact download:"
+          ls -la ./publish
 
-    - name: Setup SSH
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.EC2_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-    - name: Debug: Verify SSH setup
-      run: |
-        echo "Checking SSH configuration:"
-        ls -la ~/.ssh
-        cat ~/.ssh/known_hosts
+      - name: Debug Verify SSH setup
+        run: |
+          echo "Checking SSH configuration:"
+          ls -la ~/.ssh
+          cat ~/.ssh/known_hosts
 
-    - name: Copy files to remote server
-      run: |
-        echo "Starting file copy to EC2..."
-        scp -r ./publish/* ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/home/ubuntu/
+      - name: Copy files to remote server
+        run: |
+          echo "Starting file copy to EC2..."
+          scp -r ./publish/* ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/home/ubuntu/
 
-    - name: Debug: Verify remote file transfer
-      run: |
-        echo "Verifying files on the remote server:"
-        ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "ls -la /home/ubuntu/"
+      - name: Debug Verify remote file transfer
+        run: |
+          echo "Verifying files on the remote server:"
+          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "ls -la /home/ubuntu/"
 
-    - name: Deploy application and restart service
-      run: |
-        ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << EOF
-          sudo mkdir -p /var/www/myapp
-          sudo mv /home/ubuntu/* /var/www/myapp/
-          sudo chown -R www-data:www-data /var/www/myapp
-          sudo systemctl restart myapp.service
-        EOF
+      - name: Deploy application and restart service
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << EOF
+            sudo mkdir -p /var/www/myapp
+            sudo mv /home/ubuntu/* /var/www/myapp/
+            sudo chown -R www-data:www-data /var/www/myapp
+            sudo systemctl restart myapp.service
+          EOF
 
-    - name: Debug: Verify service status
-      run: |
-        echo "Checking the status of the application service:"
-        ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "sudo systemctl status myapp.service"
+      - name: Debug Verify service status
+        run: |
+          echo "Checking the status of the application service:"
+          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "sudo systemctl status myapp.service"
