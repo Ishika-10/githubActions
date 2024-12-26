@@ -1,4 +1,4 @@
-name: Deploy .NET Core Application to AWS EC2
+name: Deploy .NET Core Application to AWS EC2 
 
 on:
   push:
